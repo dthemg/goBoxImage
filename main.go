@@ -5,6 +5,8 @@ import (
 	"image"
 	"image/jpeg"
 	"os"
+
+	"github.com/fogleman/gg"
 )
 
 // Pixel struct
@@ -38,9 +40,6 @@ func main() {
 	width := imgCfg.Width
 	height := imgCfg.Height
 
-	fmt.Println(width)
-	fmt.Println(height)
-
 	// Reset io reader
 	imgFile.Seek(0, 0)
 
@@ -51,7 +50,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Println(img.At(100, 100).RGBA())
 	var rgbArr [649][649]pixel
 	for w := 0; w < width; w++ {
 		for h := 0; h < height; h++ {
@@ -60,40 +58,34 @@ func main() {
 		}
 	}
 
-	// Make an image with small circles
-	const gs int = 11
+	const gs int = 20
+	const gsSq = float64(gs * gs)
+	const maxPxval float64 = 65535
+
+	canvas := gg.NewContext(width, height)
+	canvas.SetHexColor("#0000ff")
+	canvas.SetLineWidth(2)
 
 	for wg := 0; wg < 649/gs; wg++ {
 		for hg := 0; hg < 649/gs; hg++ {
-			var rSum float32 = 0
-			var gSum float32 = 0
-			var bSum float32 = 0
+			var rSum float64 = 0
+			var gSum float64 = 0
+			var bSum float64 = 0
 			for i := 0; i < gs; i++ {
 				for j := 0; j < gs; j++ {
 					pixel := rgbArr[wg*gs+i][hg*gs+j]
-					rSum += float32(pixel.r)
-					gSum += float32(pixel.g)
-					bSum += float32(pixel.b)
+					rSum += float64(pixel.r)
+					gSum += float64(pixel.g)
+					bSum += float64(pixel.b)
 				}
 			}
+			var rpx = rSum / gsSq / maxPxval
+			var gpx = gSum / gsSq / maxPxval
+			var bpx = bSum / gsSq / maxPxval
+			canvas.DrawCircle(float64(wg*gs), float64(hg*gs), float64(gs)/2.)
+			canvas.SetRGB(rpx, gpx, bpx)
+			canvas.Fill()
 		}
 	}
-
-	/*
-		canvas := gg.NewContext(width, height)
-		canvas.SetHexColor("#0000ff")
-		canvas.SetLineWidth(2)
-		canvas.DrawRectangle(100, 210, float64(imageWidth), float64(imageHeight))
-		canvas.Stroke()
-		canvas.DrawImage(image, 100, 210)
-
-		//canvas.DrawCircle(500, 500, 400)
-		//canvas.SetRGBA(0, 0, 0, 0.5)
-		//canvas.Fill()
-		canvas.SavePNG("test.png")
-	*/
-}
-
-func getAverage(rgbArr [][]pixel) {
-
+	canvas.SavePNG("out.png")
 }
